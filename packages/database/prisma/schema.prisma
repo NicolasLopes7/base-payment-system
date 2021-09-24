@@ -1,0 +1,141 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Plan {
+  id Int @id @default(autoincrement())
+
+  name           String
+  debitCardFee   Int
+  creditCardFee  Int
+  boletoFee      Int
+  installmentFee Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User[]
+}
+
+model Address {
+  id Int @id @default(autoincrement())
+
+  city         String
+  complement   String
+  district     String
+  street       String
+  streetNumber String
+  zipCode      String
+  state        String
+  country      String
+
+  User User?
+}
+
+enum DocumentTypes {
+  cnpj
+  cpf
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  firstName      String
+  lastName       String
+  birthDate      String
+  phone          String
+  address        Address       @relation(fields: [addressId], references: [id])
+  addressId      Int
+  planId         Int
+  plan           Plan          @relation(fields: [planId], references: [id])
+  documentType   DocumentTypes
+  documentNumber String
+  email          String
+  password       String
+  Products       Product[]
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Order          Order[]
+  Receiver       Receiver[]
+}
+
+model Customer {
+  id Int @id @default(autoincrement())
+
+  name           String
+  birthDate      String
+  documentType   DocumentTypes
+  documentNumber String
+  active         Boolean       @default(true)
+  Order          Order[]
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  ownerId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Order     Order[]
+}
+
+enum PaymentMethods {
+  boleto
+  credit
+  debit
+}
+
+enum Status {
+  waiting
+  approved
+  canceled
+  contestation
+  chargeback
+  monitoring
+  failed
+}
+
+model Receiver {
+  id Int @id @default(autoincrement())
+
+  order   Order @relation(fields: [orderId], references: [id])
+  orderId Int
+
+  receiver   User @relation(fields: [receiverId], references: [id])
+  receiverId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  receivers Receiver[]
+
+  amount BigInt
+  fee    Int
+
+  refunded Boolean
+
+  quantity     Int @default(1)
+  installments Int @default(0)
+
+  paymentMethod PaymentMethods
+  status        Status
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  User          User?          @relation(fields: [userId], references: [id])
+  userId        Int?
+}
